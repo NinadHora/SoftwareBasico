@@ -18,8 +18,8 @@ int main (void) {
     FILE *entrada,*saida;
     errno = 0;
     
-    saida = fopen(SAIDA_FILENAME,"wb");
-    entrada = fopen(ENTRADA_FILENAME, "rb");
+    entrada = fopen(ENTRADA_FILENAME,"rb");
+    saida = fopen(SAIDA_FILENAME, "wb");
     
     if (entrada == NULL) {
         printf("Error %d \n", errno);
