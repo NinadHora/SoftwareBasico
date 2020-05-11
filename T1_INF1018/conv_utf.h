@@ -1,10 +1,6 @@
-//
-//  conv_utf.h
-//  T1_INF1018
-//
-//  Created by Julia Rocha on 5/9/20.
-//  Copyright © 2020 Julia Rocha. All rights reserved.
-//
+/* Júlia Affonso Figueiredo Rocha 1710635 3WA */
+/* Ana Carolina da Hira 1521133 3WB */
+
 #include <stdio.h>
 
 int utf8_32(FILE *arq_entrada, FILE *arq_saida);

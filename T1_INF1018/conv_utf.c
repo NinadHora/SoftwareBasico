@@ -1,167 +1,147 @@
-//
-//  conv_utf.c
-//  T1_INF1018
-//
-//  Created by Julia Rocha on 5/9/20.
-//  Copyright © 2020 Julia Rocha. All rights reserved.
-//
+/* Júlia Affonso Figueiredo Rocha 1710635 3WA */
+/* Ana Carolina da Hira 1521133 3WB */
 
 #include <stdio.h>
 #include <string.h>
 #include "conv_utf.h"
 
-void conv_little_endian(unsigned int * n) {
-    unsigned int aux, saida, mask=0xFF;
-    int i;
-
-    saida=0x0;
-
-    for( i = 0; i < 4; i++) {
-        aux= mask & *n;
-        aux<<=(24-8*i);
-        saida = saida | aux;
-        (*n)>>=8;
+void to_littleEndian(unsigned int * bytes) {
+    unsigned int current;
+    unsigned int outBuffer =0x0;
+    unsigned int mask=0xFF;
+    int counter;
+    for (counter = 0; counter < 4; counter++) {
+        current = mask & *bytes;
+        current <<= (24-8 * counter);
+        outBuffer = outBuffer | current;
+        (*bytes) >>= 8;
     }
-
-    *n=saida;
+    *bytes = outBuffer;
     return;
 }
 
-char GET_BOM (unsigned int byte_bom ) {
-    if ( byte_bom == 0Xfffe0000 )
-        return 'b';
-    if ( byte_bom == 0xFEFF )
-        return 'l';
-    return 'e';
+int get_BomValue (unsigned int bom ) {
+    if ( bom == 0xFEFF )
+        return 1;
+    if ( bom == 0Xfffe0000 )
+        return 2;
+    return -1;
 }
 
 int utf8_32(FILE *arq_entrada, FILE *arq_saida) {
-    unsigned int saida, aux;
-    int num_byte = 1;
-    unsigned char byte_lido;
-    int qtd_bytes = 1;
-    int i;
+    unsigned int outBuffer;
+    unsigned int current;
+    unsigned char currentByte;
+    int byteCounter = 1;
+    int byteQtd = 1;
+    int counter;
     
-    while (fread(&byte_lido, 1, 1, arq_entrada) == 1) {
-        while(0x8000 & byte_lido) {
-            qtd_bytes++;
-            byte_lido <<= 1;
+    while (fread(&currentByte, 1, 1, arq_entrada) == 1) {
+        while(0x8000 & currentByte) {
+            byteQtd++;
+            currentByte <<= 1;
         }
 
-        if (qtd_bytes > 4) {
-            printf("Erro no byte %d",num_byte);
+        if (byteQtd > 4) {
+            fprintf(stderr, "Erro E/S: leitura do arquivo de entrada");
             return -1;
         }
 
-        if (qtd_bytes == 1)
-            saida=(0x0 | byte_lido);
+        if (byteQtd == 1)
+            outBuffer=(0x0 | currentByte);
+        
         else {
-            aux = byte_lido;
+            current = currentByte;
+            current <<= (4*(byteQtd-2));
+            outBuffer = (0x0 | current);
 
-            aux <<= (4*(qtd_bytes-2));
-
-            saida = (0x0 | aux);
-
-            for(i = 0; i < qtd_bytes; i++) {
-                
-                fread(&byte_lido, 1, 1, arq_entrada);  // le proximo byte
-
-
-                if(!(0x8000 & byte_lido) || (0x4000 & byte_lido) ) {
-                    printf("Erro no byte %d",num_byte);
-                    return -1;
-                }
-
-                aux = byte_lido;
-                aux = (aux & 0x7FFF);  // zera primeiro byte
-                aux <<= (6*(qtd_bytes-2-i)); // shifta até a posição correta
-                saida = (saida | aux);
+            for(counter = 0; counter < byteQtd; counter++) {
+                fread(&currentByte, 1, 1, arq_entrada);
+                current = currentByte;
+                current = (current & 0x7FFF);
+                current <<= (6*(byteQtd-2-counter));
+                outBuffer = (outBuffer | current);
             }
         }
-        fwrite(&saida, 4, 1, arq_saida); //imprime
-        num_byte++;
+        fwrite(&outBuffer, 4, 1, arq_saida);
+        byteCounter++;
     }
+    printf("Conversao 8 para 32 bem sucedida");
     return 0;
 }
 
 int utf32_8( FILE *arq_entrada , FILE *arq_saida ){
+    unsigned int inBuffer;
+    unsigned int current;
+    unsigned int bytes = 0;
+    unsigned int bom;
+    unsigned long currentBytes;
+    unsigned long writtenBytes;
+    unsigned char outBuffer [ 4 ] = { 0 , 0x80 , 0x80 , 0x80 };
+    int bytesCounter;
+    int counter;
 
-    unsigned int buffer_entrada , aux , bytes=0;
-
-    unsigned char bom, buffer_saida [ 4 ] = { 0 , 0x80 , 0x80 , 0x80 };
-
-    unsigned long elements,escritos;
-    int n , i ;
-
-    if (fread(&buffer_entrada, 4, 1, arq_entrada) == 1) {
-        fprintf(stderr,"\nErro de entrada: Arquivo termina inesperadamente no byte %u\n",bytes);
+    if (fread(&inBuffer, 4, 4, arq_entrada) == 1) {
+        fprintf(stderr,"\nErro E/S: leitura do arquivo de entrada");
         return -1;
     }
     
-    bom = GET_BOM(buffer_entrada);
+    bom = get_BomValue(inBuffer);
     
-    if (bom == 'b') {
-        conv_little_endian(&buffer_entrada);
+    if (bom == -1) {
+        fprintf(stderr,"\nErro E/S: leitura do caracter BOM");
+        return -1;
     }
     
-    if (bom == 'e') {
-        fprintf(stderr,"\nErro de entrada: caracter BOM em formato errado:\n");
-        return -1;
+    if (bom == 2) {
+        to_littleEndian(&inBuffer);
     }
     
     do {
-        
-        elements = fread(&buffer_entrada , 4 , 1 , arq_entrada);
-
+        currentBytes = fread(&inBuffer , 4 , 4 , arq_entrada);
         bytes += 4;
-
-        if (elements == 0 )
+        
+        if (currentBytes == 0 )
             return 0;
-        if (bom == 'b') {
-            conv_little_endian ( &buffer_entrada );
-        }
-        if (buffer_entrada > 0x10FFFF) {
-            fprintf(stderr,"\nErro de entrada: Algarismo não existe na representação UNICODE. Byte: %u\n",bytes);
-            return -1;
-        }
-        if (elements != 1) {
-            fprintf(stderr,"\nErro de entrada: Arquivo corrompido, terminou em um estado instável no byte %u\n",bytes);
-            return -1;
+        
+        if (bom == 2) {
+            to_littleEndian ( &inBuffer );
         }
         
-        n = 1;
-        aux = 0xFFFFFF80;
+        bytesCounter = 1;
+        current = 0xFFFFFF80;
 
-        if (aux & buffer_entrada) {
-            n++;
-            aux <<= 4 ;
-            while (aux & buffer_entrada) {
-                n++ ;
-                aux <<= 5 ;
+        if (current & inBuffer) {
+            bytesCounter++;
+            current <<= 4 ;
+            while (current & inBuffer) {
+                bytesCounter++ ;
+                current <<= 5 ;
             }
         }
-        aux = 0x80; // aux agora serve pra colocar os 1's no byte inicial
-        buffer_saida[0] = 0;
+        current = 0x80;
+        outBuffer[0] = 0;
         
-        for (i = 1; i < 4; i++)
-            buffer_saida[i]=0x80;
+        for (counter = 1; counter < 4; counter++)
+            outBuffer[counter] = current;
         
-        for (i = 0 ; i < n; i++) {
-            if (n > 1) {
-                buffer_saida [ 0 ] = buffer_saida [ 0 ] | ( aux >> i );
-                buffer_saida[i] = (buffer_saida[i] | ( ( buffer_entrada >> ( 6 * (n-1-i) ) ) & 0x3F ) );
+        for (counter = 0 ; counter < bytesCounter; counter++) {
+            if (bytesCounter > 1) {
+                outBuffer [0] = outBuffer [0] | ( current >> counter );
+                outBuffer[counter] = (outBuffer[counter] | ( ( inBuffer >> ( 6 * (bytesCounter-1-counter) ) ) & 0x3F ) );
             } else {
-                buffer_saida[0] = buffer_entrada;
+                outBuffer[0] = inBuffer;
             }
-            buffer_saida[i] = (buffer_saida[i] | ( ( buffer_entrada >> ( 6 * (n-1-i) ) ) & 0x3F ) );
+            outBuffer[counter] = (outBuffer[counter] | ( ( inBuffer >> ( 6 * (bytesCounter-1-counter) ) ) & 0x3F ) );
         }
         
-        escritos = fwrite(buffer_saida , 1 , n , arq_saida);
+        writtenBytes = fwrite(outBuffer , 1 , bytesCounter , arq_saida);
         
-        if (escritos != n) {
-            fprintf(stderr,"Erro de saida: Nao foi possivel escrever no arquivo");
+        if (writtenBytes != bytesCounter) {
+            fprintf(stderr,"Erro E/S: escrita do arquivo de saida");
         }
     }
-    while (elements == 1);
+    while (currentBytes == 1);
+    printf("Conversao 32 para 8 bem sucedida\n");
     return 0;
 }
