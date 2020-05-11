@@ -81,7 +81,7 @@ int utf32_8( FILE *arq_entrada , FILE *arq_saida ){
     int bytesCounter;
     int counter;
 
-    if (fread(&inBuffer, 4, 4, arq_entrada) == 1) {
+    if (fread(&inBuffer, 4, 1, arq_entrada) == 1) {
         fprintf(stderr,"\nErro E/S: leitura do arquivo de entrada");
         return -1;
     }
@@ -89,7 +89,7 @@ int utf32_8( FILE *arq_entrada , FILE *arq_saida ){
     bom = get_BomValue(inBuffer);
     
     if (bom == -1) {
-        fprintf(stderr,"\nErro E/S: leitura do caracter BOM");
+        fprintf(stderr,"\nErro E/S: leitura do caractere BOM");
         return -1;
     }
     
