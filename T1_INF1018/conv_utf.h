@@ -1,5 +1,5 @@
 /* Júlia Affonso Figueiredo Rocha 1710635 3WA */
-/* Ana Carolina da Hira 1521133 3WB */
+/* Ana Carolina da Hora 1521133 3WB */
 
 #include <stdio.h>
 
