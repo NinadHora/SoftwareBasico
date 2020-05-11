@@ -66,7 +66,7 @@ int utf8_32(FILE *arq_entrada, FILE *arq_saida) {
         fwrite(&outBuffer, 4, 1, arq_saida);
         byteCounter++;
     }
-    printf("Conversao 8 para 32 bem sucedida");
+    printf("Conversao 8 para 32 bem sucedida\n");
     return 0;
 }
 
