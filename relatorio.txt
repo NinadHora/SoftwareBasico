@@ -1,0 +1,13 @@
+/* Júlia Affonso Figueiredo Rocha 1710635 3WA */
+/* Ana Carolina da Hora 1521133 3WB */
+
+O que está funcionando:
+	- Conversão UFT8 para UTF32:
+		- leitura do arquivo de entrada
+		- conversão com ordenação Little Endian
+		- escrita do arquivo de saída
+	- Conversão UTF32 para UTF8:
+		- leitura do arquivo de entrada
+		- identificação da ordenação pelo caractere Bom
+		- conversão
+		- escrita do arquivo de saída
